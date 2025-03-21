@@ -4,37 +4,42 @@ import GlassCard from '@/components/ui/GlassCard';
 import StatusIndicator from '@/components/ui/StatusIndicator';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { UserCircle, MoreHorizontal, Trash2, RefreshCw, Pencil } from 'lucide-react';
+import { UserCircle, MoreHorizontal, Trash2, RefreshCw, Pencil, CheckCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { WolfAccount } from '@/api/wolfAPI';
+import { cn } from '@/lib/utils';
 
 interface AccountCardProps {
-  id: string;
-  username: string;
-  status: 'online' | 'offline' | 'idle' | 'error';
-  activeRoom?: string;
+  account: WolfAccount;
   onDelete: (id: string) => void;
   onToggle: (id: string, active: boolean) => void;
   onEdit: (id: string) => void;
+  isActive: boolean;
+  onSetActive: (account: WolfAccount) => void;
 }
 
-const AccountCard = ({ 
-  id, 
-  username, 
-  status, 
-  activeRoom, 
-  onDelete, 
+const AccountCard = ({
+  account,
+  onDelete,
   onToggle,
-  onEdit
+  onEdit,
+  isActive,
+  onSetActive
 }: AccountCardProps) => {
-  const [isActive, setIsActive] = useState(status === 'online');
+  const [isToggling, setIsToggling] = useState(false);
+  const { id, username, status, activeRoom } = account;
 
-  const handleToggle = (checked: boolean) => {
-    setIsActive(checked);
-    onToggle(id, checked);
+  const handleToggle = async (checked: boolean) => {
+    setIsToggling(true);
+    await onToggle(id, checked);
+    setIsToggling(false);
   };
 
   return (
-    <GlassCard className="w-full transition-all duration-300">
+    <GlassCard className={cn(
+      "w-full transition-all duration-300",
+      isActive && "border-2 border-wolf-primary"
+    )}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center">
           <UserCircle className="w-10 h-10 text-wolf-primary mr-3" />
@@ -51,6 +56,10 @@ const AccountCard = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => onSetActive(account)} className="cursor-pointer">
+              <CheckCircle className="mr-2 h-4 w-4" />
+              <span>تحديد كحساب نشط</span>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onEdit(id)} className="cursor-pointer">
               <Pencil className="mr-2 h-4 w-4" />
               <span>تعديل</span>
@@ -63,6 +72,12 @@ const AccountCard = ({
         </DropdownMenu>
       </div>
 
+      {isActive && (
+        <div className="mb-4 px-3 py-2 bg-green-50 rounded-lg text-sm">
+          <p className="font-medium text-green-600">الحساب النشط حالياً</p>
+        </div>
+      )}
+
       {activeRoom && (
         <div className="mb-4 px-3 py-2 bg-wolf-light rounded-lg text-sm">
           <p className="font-medium text-gray-700">الغرفة النشطة:</p>
@@ -73,19 +88,20 @@ const AccountCard = ({
       <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
         <div className="flex items-center gap-2">
           <Switch 
-            checked={isActive} 
-            onCheckedChange={handleToggle} 
+            checked={status === 'online'}
+            onCheckedChange={handleToggle}
             id={`account-toggle-${id}`}
+            disabled={isToggling}
           />
           <label 
             htmlFor={`account-toggle-${id}`}
             className="text-sm font-medium text-gray-700 cursor-pointer"
           >
-            {isActive ? 'نشط' : 'غير نشط'}
+            {status === 'online' ? 'نشط' : 'غير نشط'}
           </label>
         </div>
         
-        <Button variant="ghost" size="sm" className="gap-1">
+        <Button variant="ghost" size="sm" className="gap-1" onClick={() => onSetActive(account)}>
           <RefreshCw className="h-4 w-4 text-wolf-primary" />
           <span>تحديث</span>
         </Button>

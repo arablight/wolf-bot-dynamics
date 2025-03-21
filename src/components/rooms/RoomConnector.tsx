@@ -5,30 +5,60 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link2, ArrowRight } from 'lucide-react';
+import { useAccounts } from '@/contexts/AccountContext';
+import { useToast } from '@/components/ui/use-toast';
 
-interface RoomConnectorProps {
-  onConnect: (roomUrl: string) => void;
-}
-
-const RoomConnector = ({ onConnect }: RoomConnectorProps) => {
+const RoomConnector = () => {
   const [roomUrl, setRoomUrl] = useState('');
   const [roomId, setRoomId] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const { activeAccount, connectToRoom } = useAccounts();
+  const { toast } = useToast();
   
-  const handleUrlConnect = () => {
-    if (roomUrl) {
-      onConnect(roomUrl);
+  const handleUrlConnect = async () => {
+    if (!roomUrl) return;
+    
+    if (!activeAccount) {
+      toast({
+        title: "تحذير",
+        description: "الرجاء تحديد حساب نشط أولاً",
+        variant: "destructive"
+      });
+      return;
     }
+    
+    setIsConnecting(true);
+    await connectToRoom(roomUrl);
+    setIsConnecting(false);
   };
   
-  const handleIdConnect = () => {
-    if (roomId) {
-      onConnect(`https://wolf.live/g/${roomId}`);
+  const handleIdConnect = async () => {
+    if (!roomId) return;
+    
+    if (!activeAccount) {
+      toast({
+        title: "تحذير",
+        description: "الرجاء تحديد حساب نشط أولاً",
+        variant: "destructive"
+      });
+      return;
     }
+    
+    const formattedUrl = `https://wolf.live/g/${roomId}`;
+    setIsConnecting(true);
+    await connectToRoom(formattedUrl);
+    setIsConnecting(false);
   };
   
   return (
     <GlassCard className="w-full">
       <h3 className="text-lg font-semibold mb-4">الاتصال بغرفة</h3>
+      
+      {!activeAccount && (
+        <div className="bg-yellow-50 p-3 rounded-lg mb-4 text-sm text-yellow-600">
+          <p>الرجاء تحديد حساب نشط أولاً للاتصال بغرفة</p>
+        </div>
+      )}
       
       <Tabs defaultValue="url" className="mt-4">
         <TabsList className="grid w-full grid-cols-2 mb-4">
@@ -43,11 +73,13 @@ const RoomConnector = ({ onConnect }: RoomConnectorProps) => {
               onChange={(e) => setRoomUrl(e.target.value)}
               placeholder="أدخل رابط الغرفة"
               className="rounded-r-none focus-visible:ring-0 border-r-0"
+              disabled={!activeAccount || isConnecting}
             />
             <Button 
               className="rounded-l-none"
               onClick={handleUrlConnect}
-              disabled={!roomUrl}
+              disabled={!roomUrl || !activeAccount || isConnecting}
+              isLoading={isConnecting}
             >
               <ArrowRight className="h-4 w-4" />
             </Button>
@@ -66,11 +98,13 @@ const RoomConnector = ({ onConnect }: RoomConnectorProps) => {
               onChange={(e) => setRoomId(e.target.value)}
               placeholder="أدخل معرف الغرفة"
               className="rounded-r-none focus-visible:ring-0 border-r-0"
+              disabled={!activeAccount || isConnecting}
             />
             <Button 
               className="rounded-l-none"
               onClick={handleIdConnect}
-              disabled={!roomId}
+              disabled={!roomId || !activeAccount || isConnecting}
+              isLoading={isConnecting}
             >
               <ArrowRight className="h-4 w-4" />
             </Button>

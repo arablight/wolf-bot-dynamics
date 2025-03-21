@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { useAccounts } from '@/contexts/AccountContext';
 
 interface AddAccountModalProps {
   open: boolean;
@@ -13,12 +14,13 @@ interface AddAccountModalProps {
   onAddAccount: (account: { username: string; password: string; }) => void;
 }
 
-const AddAccountModal = ({ open, onOpenChange, onAddAccount }: AddAccountModalProps) => {
+const AddAccountModal = ({ open, onOpenChange }: AddAccountModalProps) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const { addAccount, isLoading } = useAccounts();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!username || !password) {
@@ -26,11 +28,15 @@ const AddAccountModal = ({ open, onOpenChange, onAddAccount }: AddAccountModalPr
       return;
     }
     
-    onAddAccount({ username, password });
-    setUsername('');
-    setPassword('');
-    setError(null);
-    onOpenChange(false);
+    const success = await addAccount(username, password);
+    if (success) {
+      setUsername('');
+      setPassword('');
+      setError(null);
+      onOpenChange(false);
+    } else {
+      setError('فشل إضافة الحساب. تأكد من صحة بيانات الاعتماد.');
+    }
   };
 
   return (
@@ -56,6 +62,7 @@ const AddAccountModal = ({ open, onOpenChange, onAddAccount }: AddAccountModalPr
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="أدخل اسم المستخدم"
                   className="transition-all duration-200"
+                  disabled={isLoading}
                 />
               </div>
               
@@ -68,6 +75,7 @@ const AddAccountModal = ({ open, onOpenChange, onAddAccount }: AddAccountModalPr
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="أدخل كلمة المرور"
                   className="transition-all duration-200"
+                  disabled={isLoading}
                 />
               </div>
 
@@ -79,10 +87,27 @@ const AddAccountModal = ({ open, onOpenChange, onAddAccount }: AddAccountModalPr
               )}
               
               <DialogFooter className="mt-6 flex sm:justify-between">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => onOpenChange(false)}
+                  disabled={isLoading}
+                >
                   إلغاء
                 </Button>
-                <Button type="submit">إضافة الحساب</Button>
+                <Button 
+                  type="submit"
+                  disabled={isLoading || !username || !password}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      جاري الإضافة...
+                    </>
+                  ) : (
+                    'إضافة الحساب'
+                  )}
+                </Button>
               </DialogFooter>
             </form>
           </TabsContent>
