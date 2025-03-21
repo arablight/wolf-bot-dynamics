@@ -302,7 +302,7 @@ const BotRules = () => {
                     placeholder="أدخل النص الذي سيتم إرساله كرد"
                     className="min-h-[100px]"
                   />
-                  <p className="text-xs text-gray-500">يمكنك استخدام {name} لإدراج اسم المستخدم</p>
+                  <p className="text-xs text-gray-500">يمكنك استخدام {'{name}'} لإدراج اسم المستخدم</p>
                 </div>
                 
                 <div className="flex items-center space-x-2 gap-2">
