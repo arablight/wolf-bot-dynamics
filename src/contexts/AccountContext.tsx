@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { WolfAccount, WolfAccountManager, accountManager, PrivateMessage, GUESS_CATEGORIES } from '@/api/wolfAPI';
 import { useToast } from '@/components/ui/use-toast';
@@ -39,7 +38,6 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [activeAccount, setActiveAccount] = useState<WolfAccount | null>(null);
   const { toast } = useToast();
 
-  // تحميل الحسابات عند بدء التشغيل
   useEffect(() => {
     refreshAccounts();
   }, []);
@@ -48,7 +46,6 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const loadedAccounts = accountManager.getAccounts();
     setAccounts(loadedAccounts);
     
-    // تحديث الحساب النشط إذا تغير
     if (activeAccount) {
       const updatedActiveAccount = loadedAccounts.find(acc => acc.id === activeAccount.id);
       if (updatedActiveAccount) {
@@ -82,7 +79,6 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteAccount = (id: string) => {
-    // إذا كان الحساب النشط هو الذي يتم حذفه، قم بإزالته
     if (activeAccount?.id === id) {
       setActiveAccount(null);
     }
@@ -229,12 +225,10 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return accountManager.getPrivateMessagesForAccount(activeAccount.id);
   };
 
-  // الاستماع للرسائل الجديدة
   useEffect(() => {
     const handleNewMessages = (event: any) => {
       const { accountId } = event.detail;
       
-      // إذا كانت الرسائل للحساب النشط، قم بتحديث الحالة
       if (activeAccount && accountId === activeAccount.id) {
         refreshAccounts();
       }
@@ -247,9 +241,7 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, [activeAccount]);
 
-  // تحديث القائمة عند تغيير الحسابات
   useEffect(() => {
-    // إنشاء مستمع لتحديث القائمة كل 5 ثوانٍ
     const interval = setInterval(refreshAccounts, 5000);
     return () => clearInterval(interval);
   }, []);

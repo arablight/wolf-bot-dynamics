@@ -1,4 +1,3 @@
-
 import { toast } from "@/components/ui/use-toast";
 
 // تعريف الأنواع
@@ -32,7 +31,7 @@ export type WolfAPIResponse = {
 // معرفات البوتات الرسمية
 export const OFFICIAL_BOT_IDS = {
   RACE_BOT: "80277459", // بوت سباق
-  GUESS_BOT: "79216477", // بوت خمن
+  GUESS_BOT: "45578849", // بوت خمن - updated ID
   FISH_BOT: "76305584", // بوت صيد
 };
 
@@ -616,6 +615,14 @@ export class WolfAccountManager {
         // تخزين مرجع المؤقت
         this.activeTimers.set(`race-cooldown-${accountId}`, timerId);
       }
+      
+      // تحديد الرسالة كمقروءة
+      await wolfAPI.markMessageAsRead(account.authToken, message.id);
+    }
+    
+    // معالجة رسائل بوت التخمين - إضافة تفاعل مع صور التخمين
+    for (const message of guessMessages) {
+      // يمكن إضافة منطق للتفاعل مع صور التخمين هنا
       
       // تحديد الرسالة كمقروءة
       await wolfAPI.markMessageAsRead(account.authToken, message.id);
