@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import Header from '@/components/layout/Header';
 import GlassCard from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/button';
-import { Plus, Bot, Users, MessageSquare, ActivitySquare } from 'lucide-react';
+import { Plus, Bot, Users, MessageSquare, ActivitySquare, Play } from 'lucide-react';
 import AccountCard from '@/components/accounts/AccountCard';
 import AddAccountModal from '@/components/accounts/AddAccountModal';
 import RoomConnector from '@/components/rooms/RoomConnector';
@@ -11,6 +10,7 @@ import CommandPanel from '@/components/commands/CommandPanel';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
+import { Switch } from '@/components/ui/switch';
 
 // Mock data for initial accounts
 const initialAccounts = [
