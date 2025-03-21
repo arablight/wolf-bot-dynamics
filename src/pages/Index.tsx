@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import GlassCard from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Plus, Bot, Users, MessageSquare, ActivitySquare, Play } from 'lucide-react';
 import AccountCard from '@/components/accounts/AccountCard';
 import AddAccountModal from '@/components/accounts/AddAccountModal';

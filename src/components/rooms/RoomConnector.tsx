@@ -4,7 +4,7 @@ import GlassCard from '@/components/ui/GlassCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Link2, ArrowRight } from 'lucide-react';
+import { Link2, ArrowRight, Loader2 } from 'lucide-react';
 import { useAccounts } from '@/contexts/AccountContext';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -79,9 +79,12 @@ const RoomConnector = () => {
               className="rounded-l-none"
               onClick={handleUrlConnect}
               disabled={!roomUrl || !activeAccount || isConnecting}
-              isLoading={isConnecting}
             >
-              <ArrowRight className="h-4 w-4" />
+              {isConnecting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ArrowRight className="h-4 w-4" />
+              )}
             </Button>
           </div>
           
@@ -104,9 +107,12 @@ const RoomConnector = () => {
               className="rounded-l-none"
               onClick={handleIdConnect}
               disabled={!roomId || !activeAccount || isConnecting}
-              isLoading={isConnecting}
             >
-              <ArrowRight className="h-4 w-4" />
+              {isConnecting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ArrowRight className="h-4 w-4" />
+              )}
             </Button>
           </div>
           
