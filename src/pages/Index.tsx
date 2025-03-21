@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import GlassCard from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Bot, Users, MessageSquare, ActivitySquare, Play, Settings, Zap } from 'lucide-react';
+import { Plus, Bot, Users, MessageSquare, ActivitySquare, Play, Settings, Zap, Car, Fish, Puzzle } from 'lucide-react';
 import AccountCard from '@/components/accounts/AccountCard';
 import AddAccountModal from '@/components/accounts/AddAccountModal';
 import RoomConnector from '@/components/rooms/RoomConnector';
@@ -15,6 +16,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AccountProvider, useAccounts } from '@/contexts/AccountContext';
+import PrivateMessages from '@/components/messages/PrivateMessages';
 
 // مكون لسجل النشاط
 const ActivityLog = () => {
@@ -76,7 +78,7 @@ const ActivityLog = () => {
           </div>
         ) : (
           logs.map((log, index) => (
-            <div key={index} className={`text-sm p-2 border-l-2 rounded ${getLogClass(log.type)}`}>
+            <div key={index} className={`text-sm p-2 border-r-2 rounded ${getLogClass(log.type)}`}>
               <p className="font-medium">{log.message}</p>
               <p className="text-xs text-gray-500">{getTimeAgo(log.timestamp)}</p>
             </div>
@@ -169,7 +171,7 @@ const ChatPreview = () => {
 
 // مكون لوحة تحكم البوت
 const BotDashboard = () => {
-  const { activeAccount, isRaceCommandActive } = useAccounts();
+  const { activeAccount, isRaceCommandActive, isRaceAutoDetectionActive } = useAccounts();
   
   return (
     <section className="animate-slide-up" style={{ animationDelay: '100ms' }}>
@@ -185,21 +187,44 @@ const BotDashboard = () => {
       </div>
       
       <Tabs defaultValue="race">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
-          <TabsTrigger value="race">سباق</TabsTrigger>
-          <TabsTrigger value="guess">تخمين</TabsTrigger>
-          <TabsTrigger value="rules">القواعد</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsTrigger value="race" className="flex items-center gap-1">
+            <Car className="h-4 w-4" />
+            <span>سباق</span>
+          </TabsTrigger>
+          <TabsTrigger value="guess" className="flex items-center gap-1">
+            <Puzzle className="h-4 w-4" />
+            <span>تخمين</span>
+          </TabsTrigger>
+          <TabsTrigger value="fish" className="flex items-center gap-1">
+            <Fish className="h-4 w-4" />
+            <span>صيد</span>
+          </TabsTrigger>
+          <TabsTrigger value="rules" className="flex items-center gap-1">
+            <Settings className="h-4 w-4" />
+            <span>القواعد</span>
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="race" className="space-y-4">
           <GlassCard className="p-4">
-            <h3 className="font-semibold mb-2">حالة السباق</h3>
+            <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <Car className="h-4 w-4 text-wolf-primary" />
+              <span>حالة بوت السباق</span>
+            </h3>
             <div className="space-y-2">
               <div className="bg-wolf-light p-3 rounded-lg">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">الحالة:</span>
                   <span className={`text-sm ${isRaceCommandActive ? 'text-green-600' : 'text-gray-500'} font-medium`}>
                     {isRaceCommandActive ? 'نشط' : 'غير نشط'}
+                  </span>
+                </div>
+                <Separator className="my-2" />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">وضع التشغيل:</span>
+                  <span className="text-sm text-wolf-primary font-medium">
+                    {isRaceAutoDetectionActive ? 'كشف تلقائي' : 'يدوي'}
                   </span>
                 </div>
                 <Separator className="my-2" />
@@ -213,7 +238,7 @@ const BotDashboard = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">الغرفة النشطة:</span>
                   <span className="text-sm text-wolf-primary font-medium truncate max-w-[150px]">
-                    {activeAccount?.activeRoom ? activeAccount.activeRoom : 'لم يتم تحديد غرفة'}
+                    {activeAccount?.activeRoom ? activeAccount.activeRoom.replace('https://', '') : 'لم يتم تحديد غرفة'}
                   </span>
                 </div>
               </div>
@@ -239,13 +264,26 @@ const BotDashboard = () => {
                   </div>
                 </div>
               </div>
+              
+              <div className="bg-blue-50 p-3 rounded-lg mt-4 text-sm text-blue-600">
+                <p className="flex items-center gap-1">
+                  <Bot className="h-4 w-4" />
+                  <span>معرّف بوت السباق الرسمي: <strong>80277459</strong></span>
+                </p>
+                <p className="mt-1 text-xs">
+                  يتم التفاعل مع الرسائل الخاصة من البوت واستشعار حالة استعادة طاقة الحيوان وانتهاء الجولة
+                </p>
+              </div>
             </div>
           </GlassCard>
         </TabsContent>
         
         <TabsContent value="guess" className="space-y-4">
           <GlassCard className="p-4">
-            <h3 className="font-semibold mb-2">بوت التخمين</h3>
+            <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <Puzzle className="h-4 w-4 text-wolf-primary" />
+              <span>حالة بوت التخمين</span>
+            </h3>
             <p className="text-sm text-gray-600 mb-4">
               قم بإعداد البوت للتفاعل مع ألعاب التخمين في الغرف
             </p>
@@ -254,6 +292,30 @@ const BotDashboard = () => {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">التخمين التلقائي</span>
                 <Switch id="auto-guess" defaultChecked />
+              </div>
+              
+              <div className="bg-wolf-light p-3 rounded-lg">
+                <h4 className="text-sm font-medium mb-2">فئات التخمين:</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" size="sm" className="text-xs justify-start">
+                    منوع - !ج منوع
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-xs justify-start">
+                    مشاهير - !ج مشاهير
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-xs justify-start">
+                    عن قرب - !ج عن قرب
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-xs justify-start">
+                    4 في 4 - !ج 4 في 4
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-xs justify-start">
+                    طعام - !ج طعام
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-xs justify-start">
+                    رياضة - !ج رياضة
+                  </Button>
+                </div>
               </div>
               
               <div className="bg-wolf-light p-3 rounded-lg">
@@ -309,6 +371,93 @@ const BotDashboard = () => {
                     <div className="text-lg font-bold text-wolf-primary">5</div>
                   </div>
                 </div>
+              </div>
+              
+              <div className="bg-blue-50 p-3 rounded-lg mt-4 text-sm text-blue-600">
+                <p className="flex items-center gap-1">
+                  <Bot className="h-4 w-4" />
+                  <span>معرّف بوت التخمين الرسمي: <strong>79216477</strong></span>
+                </p>
+                <p className="mt-1 text-xs">
+                  يتم استخدام الذكاء الاصطناعي لتخمين الصور والتفاعل مع بوت التخمين الرسمي
+                </p>
+              </div>
+            </div>
+          </GlassCard>
+        </TabsContent>
+        
+        <TabsContent value="fish" className="space-y-4">
+          <GlassCard className="p-4">
+            <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <Fish className="h-4 w-4 text-wolf-primary" />
+              <span>حالة بوت الصيد</span>
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              قم بإعداد البوت للتفاعل مع بوت الصيد الرسمي واستشعار الطعم الجديد
+            </p>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">الانتقال التلقائي للغرف</span>
+                <Switch id="auto-fish" defaultChecked />
+              </div>
+              
+              <div className="bg-wolf-light p-3 rounded-lg">
+                <h4 className="text-sm font-medium mb-2">إعدادات الصيد:</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">مستوى الطعم:</span>
+                    <Select defaultValue="3">
+                      <SelectTrigger className="w-32 h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">مستوى 1</SelectItem>
+                        <SelectItem value="2">مستوى 2</SelectItem>
+                        <SelectItem value="3">مستوى 3</SelectItem>
+                        <SelectItem value="4">مستوى 4</SelectItem>
+                        <SelectItem value="5">مستوى 5</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">أمر الصيد:</span>
+                    <Input className="w-32 h-8 text-xs" value="!صيد 3" readOnly />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-wolf-light p-3 rounded-lg mt-4">
+                <h4 className="text-sm font-medium mb-2">إحصائيات الصيد:</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white p-2 rounded">
+                    <div className="text-xs text-gray-600">عدد عمليات الصيد</div>
+                    <div className="text-lg font-bold text-wolf-primary">12</div>
+                  </div>
+                  <div className="bg-white p-2 rounded">
+                    <div className="text-xs text-gray-600">مرات الانتقال</div>
+                    <div className="text-lg font-bold text-wolf-primary">8</div>
+                  </div>
+                  <div className="bg-white p-2 rounded">
+                    <div className="text-xs text-gray-600">الأسماك المصطادة</div>
+                    <div className="text-lg font-bold text-wolf-primary">25</div>
+                  </div>
+                  <div className="bg-white p-2 rounded">
+                    <div className="text-xs text-gray-600">المكافآت</div>
+                    <div className="text-lg font-bold text-wolf-primary">3</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 p-3 rounded-lg mt-4 text-sm text-blue-600">
+                <p className="flex items-center gap-1">
+                  <Bot className="h-4 w-4" />
+                  <span>معرّف بوت الصيد الرسمي: <strong>76305584</strong></span>
+                </p>
+                <p className="mt-1 text-xs">
+                  يتم استشعار الرسائل الخاصة من بوت الصيد للانتقال إلى غرف الطعم تلقائيًا
+                </p>
               </div>
             </div>
           </GlassCard>
@@ -427,6 +576,9 @@ const Index = () => {
                 <RoomConnector />
                 
                 <CommandPanel />
+                
+                {/* Private Messages */}
+                <PrivateMessages />
                 
                 {/* Activity Log */}
                 <ActivityLog />

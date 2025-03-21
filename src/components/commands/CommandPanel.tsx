@@ -4,7 +4,10 @@ import GlassCard from '@/components/ui/GlassCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Play, Plus, Clock, Terminal, Save, Square, Settings, Database, AlertTriangle } from 'lucide-react';
+import { 
+  Play, Plus, Clock, Terminal, Save, Square, Settings, Database, AlertTriangle,
+  Fish, MessageSquare, Car, Puzzle, Bot
+} from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -22,7 +25,19 @@ const CommandPanel = () => {
   const [commandRepeat, setCommandRepeat] = useState('once');
   const [autoReplies, setAutoReplies] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const { activeAccount, startRaceCommand, stopRaceCommand, isRaceCommandActive } = useAccounts();
+  const [autoDetection, setAutoDetection] = useState(false);
+  const [guessCategory, setGuessCategory] = useState('mixed');
+  const [fishBaitLevel, setFishBaitLevel] = useState(3);
+  const { 
+    activeAccount, 
+    startRaceCommand, 
+    stopRaceCommand, 
+    isRaceCommandActive,
+    isRaceAutoDetectionActive,
+    startGuessCommand,
+    startFishCommand,
+    guessCategories
+  } = useAccounts();
   const { toast } = useToast();
   
   const handleStartRaceCommand = () => {
@@ -44,11 +59,71 @@ const CommandPanel = () => {
       return;
     }
     
-    const success = startRaceCommand(interval);
+    const success = startRaceCommand(interval, autoDetection);
     if (success) {
       toast({
         title: "تم تشغيل أمر السباق",
-        description: `سيتم إرسال أمر السباق كل ${interval} دقائق و 10 ثوانٍ`,
+        description: autoDetection 
+          ? "تم تفعيل الكشف التلقائي لأوامر السباق" 
+          : `سيتم إرسال أمر السباق كل ${interval} دقائق و 10 ثوانٍ`,
+      });
+    }
+  };
+  
+  const handleStartGuessCommand = async () => {
+    if (!activeAccount) {
+      toast({
+        title: "تحذير",
+        description: "الرجاء تحديد حساب نشط أولاً",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!activeAccount.activeRoom) {
+      toast({
+        title: "تحذير",
+        description: "الرجاء الاتصال بغرفة أولاً",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const selectedCategory = guessCategories.find(c => c.id === guessCategory);
+    
+    const success = await startGuessCommand(guessCategory);
+    if (success) {
+      toast({
+        title: "تم إرسال أمر التخمين",
+        description: `تم إرسال الأمر "${selectedCategory?.command}" بنجاح`,
+      });
+    }
+  };
+  
+  const handleStartFishCommand = async () => {
+    if (!activeAccount) {
+      toast({
+        title: "تحذير",
+        description: "الرجاء تحديد حساب نشط أولاً",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!activeAccount.activeRoom) {
+      toast({
+        title: "تحذير",
+        description: "الرجاء الاتصال بغرفة أولاً",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const success = await startFishCommand(fishBaitLevel);
+    if (success) {
+      toast({
+        title: "تم إرسال أمر الصيد",
+        description: `تم إرسال الأمر "!صيد ${fishBaitLevel}" بنجاح`,
       });
     }
   };
@@ -123,10 +198,23 @@ const CommandPanel = () => {
       )}
       
       <Tabs defaultValue="race" className="mt-4">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
-          <TabsTrigger value="race">أوامر السباق</TabsTrigger>
-          <TabsTrigger value="custom">أوامر مخصصة</TabsTrigger>
-          <TabsTrigger value="settings">الإعدادات</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsTrigger value="race" className="flex items-center gap-1">
+            <Car className="h-3 w-3" />
+            <span className="hidden sm:inline">سباق</span>
+          </TabsTrigger>
+          <TabsTrigger value="guess" className="flex items-center gap-1">
+            <Puzzle className="h-3 w-3" />
+            <span className="hidden sm:inline">خمن</span>
+          </TabsTrigger>
+          <TabsTrigger value="fish" className="flex items-center gap-1">
+            <Fish className="h-3 w-3" />
+            <span className="hidden sm:inline">صيد</span>
+          </TabsTrigger>
+          <TabsTrigger value="custom" className="flex items-center gap-1">
+            <Terminal className="h-3 w-3" />
+            <span className="hidden sm:inline">مخصص</span>
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="race" className="space-y-4">
@@ -134,7 +222,10 @@ const CommandPanel = () => {
             <CardContent className="pt-6">
               <div className="space-y-2">
                 <div className="flex items-center justify-between mb-3">
-                  <Label htmlFor="race-command" className="text-sm font-medium">أمر السباق</Label>
+                  <div className="flex items-center gap-2">
+                    <Car className="h-4 w-4 text-wolf-primary" />
+                    <Label htmlFor="race-command" className="text-sm font-medium">أمر السباق</Label>
+                  </div>
                   <div className="flex items-center gap-2">
                     <Switch id="race-active" checked={isRaceCommandActive} disabled={true} />
                     <Label htmlFor="race-active" className="text-xs">
@@ -154,11 +245,24 @@ const CommandPanel = () => {
                     <Terminal className="h-4 w-4" />
                   </Button>
                 </div>
+                
+                <div className="flex items-center space-x-2 space-x-reverse gap-2 mt-3">
+                  <Switch 
+                    id="auto-detection" 
+                    checked={autoDetection}
+                    onCheckedChange={setAutoDetection}
+                    disabled={isRaceCommandActive}
+                  />
+                  <Label htmlFor="auto-detection" className="text-sm">الكشف التلقائي عن رسائل بوت السباق</Label>
+                </div>
+                <p className="text-xs text-gray-500 pr-7">
+                  عند تفعيل هذا الخيار، سيقوم البوت بإرسال أمر السباق تلقائيًا عند استعادة طاقة الحيوان وانتهاء الجولة
+                </p>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className={autoDetection ? "opacity-50" : ""}>
             <CardContent className="pt-6 space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -171,7 +275,7 @@ const CommandPanel = () => {
                   max={30}
                   step={1}
                   onValueChange={(values) => setInterval(values[0])}
-                  disabled={isRaceCommandActive}
+                  disabled={isRaceCommandActive || autoDetection}
                 />
               </div>
               
@@ -202,6 +306,141 @@ const CommandPanel = () => {
               <span>بدء تشغيل أمر السباق</span>
             </Button>
           )}
+          
+          <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-600 mt-4">
+            <p className="text-xs">
+              معرّف بوت السباق الرسمي: <strong>80277459</strong>
+              <br />
+              سيقوم البوت بالتفاعل تلقائيًا مع الرسائل الخاصة من بوت السباق عند تفعيل الكشف التلقائي.
+            </p>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="guess" className="space-y-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <Puzzle className="h-4 w-4 text-wolf-primary" />
+                  <Label className="text-sm font-medium">أمر التخمين</Label>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="guess-category" className="text-sm">اختر فئة التخمين:</Label>
+                  <Select value={guessCategory} onValueChange={setGuessCategory}>
+                    <SelectTrigger id="guess-category">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {guessCategories.map(category => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name} - {category.command}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center space-x-2 space-x-reverse gap-2 mt-3">
+                  <Switch id="guess-ai" defaultChecked />
+                  <Label htmlFor="guess-ai" className="text-sm">استخدام الذكاء الاصطناعي للتخمين</Label>
+                </div>
+                <p className="text-xs text-gray-500 pr-7">
+                  سيحاول البوت تخمين الصور باستخدام الذكاء الاصطناعي وإرسال الإجابات تلقائيًا
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">الفاصل الزمني بين التخمينات (ثوانٍ)</Label>
+                <Slider
+                  value={[3]}
+                  min={1}
+                  max={10}
+                  step={1}
+                  disabled={false}
+                />
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>سريع (1 ثانية)</span>
+                  <span>بطيء (10 ثوانٍ)</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Button 
+            className="w-full gap-2 mt-2"
+            onClick={handleStartGuessCommand}
+            disabled={!activeAccount || !activeAccount.activeRoom}
+          >
+            <Play className="h-4 w-4" />
+            <span>بدء أمر التخمين</span>
+          </Button>
+          
+          <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-600 mt-4">
+            <p className="text-xs">
+              معرّف بوت التخمين الرسمي: <strong>79216477</strong>
+              <br />
+              سيقوم البوت بالتفاعل تلقائيًا مع صور التخمين ومحاولة التعرف عليها.
+            </p>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="fish" className="space-y-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <Fish className="h-4 w-4 text-wolf-primary" />
+                  <Label className="text-sm font-medium">أمر الصيد</Label>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="fish-bait" className="text-sm">مستوى الطعم:</Label>
+                  <Select value={fishBaitLevel.toString()} onValueChange={value => setFishBaitLevel(parseInt(value))}>
+                    <SelectTrigger id="fish-bait">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">مستوى 1</SelectItem>
+                      <SelectItem value="2">مستوى 2</SelectItem>
+                      <SelectItem value="3">مستوى 3</SelectItem>
+                      <SelectItem value="4">مستوى 4</SelectItem>
+                      <SelectItem value="5">مستوى 5</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center space-x-2 space-x-reverse gap-2 mt-3">
+                  <Switch id="fish-auto-detect" defaultChecked />
+                  <Label htmlFor="fish-auto-detect" className="text-sm">الكشف التلقائي عن رسائل بوت الصيد</Label>
+                </div>
+                <p className="text-xs text-gray-500 pr-7">
+                  عند تفعيل هذا الخيار، سيقوم البوت بالانتقال تلقائيًا إلى غرفة الطعم وإرسال أمر الصيد
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Button 
+            className="w-full gap-2 mt-2"
+            onClick={handleStartFishCommand}
+            disabled={!activeAccount || !activeAccount.activeRoom}
+          >
+            <Play className="h-4 w-4" />
+            <span>إرسال أمر الصيد</span>
+          </Button>
+          
+          <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-600 mt-4">
+            <p className="text-xs">
+              معرّف بوت الصيد الرسمي: <strong>76305584</strong>
+              <br />
+              سيقوم البوت بالتفاعل تلقائيًا مع رسائل بوت الصيد والانتقال إلى غرف الطعم.
+            </p>
+          </div>
         </TabsContent>
         
         <TabsContent value="custom" className="space-y-4">
@@ -304,84 +543,6 @@ const CommandPanel = () => {
               <span>إرسال</span>
             </Button>
           </div>
-        </TabsContent>
-        
-        <TabsContent value="settings" className="space-y-4">
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Settings className="h-4 w-4 text-gray-500" />
-                  <Label htmlFor="auto-replies" className="text-sm font-medium">الردود التلقائية</Label>
-                </div>
-                <Switch 
-                  id="auto-replies" 
-                  checked={autoReplies}
-                  onCheckedChange={setAutoReplies}
-                />
-              </div>
-              <p className="text-xs text-gray-500">
-                تمكين الردود التلقائية سيسمح للبوت بالرد على الرسائل حسب القواعد المحددة
-              </p>
-              
-              <Separator />
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Database className="h-4 w-4 text-gray-500" />
-                  <Label htmlFor="show-advanced" className="text-sm font-medium">إعدادات متقدمة</Label>
-                </div>
-                <Switch 
-                  id="show-advanced" 
-                  checked={showAdvanced}
-                  onCheckedChange={setShowAdvanced}
-                />
-              </div>
-              
-              {showAdvanced && (
-                <div className="space-y-3 p-3 bg-gray-50 rounded-md mt-2">
-                  <div className="space-y-1">
-                    <Label htmlFor="timeout" className="text-xs font-medium">مهلة الاستجابة (بالثواني)</Label>
-                    <Input
-                      id="timeout"
-                      type="number"
-                      defaultValue={30}
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <Label htmlFor="max-retries" className="text-xs font-medium">الحد الأقصى لإعادة المحاولات</Label>
-                    <Input
-                      id="max-retries"
-                      type="number"
-                      defaultValue={3}
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <Label htmlFor="log-level" className="text-xs font-medium">مستوى التسجيل</Label>
-                    <Select defaultValue="info">
-                      <SelectTrigger id="log-level" className="h-8 text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="debug">تصحيح</SelectItem>
-                        <SelectItem value="info">معلومات</SelectItem>
-                        <SelectItem value="warn">تحذيرات</SelectItem>
-                        <SelectItem value="error">أخطاء</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <Button className="w-full">
-            حفظ الإعدادات
-          </Button>
         </TabsContent>
       </Tabs>
     </GlassCard>
