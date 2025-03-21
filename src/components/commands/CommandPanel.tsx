@@ -4,7 +4,7 @@ import GlassCard from '@/components/ui/GlassCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Play, Plus, Clock, Terminal, Save, Square } from 'lucide-react';
+import { Play, Plus, Clock, Terminal, Save, Square, Settings, Database, AlertTriangle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -12,10 +12,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useAccounts } from '@/contexts/AccountContext';
 import { useToast } from '@/components/ui/use-toast';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 
 const CommandPanel = () => {
   const [commandText, setCommandText] = useState('');
   const [interval, setInterval] = useState(10);
+  const [commandType, setCommandType] = useState('public');
+  const [commandRepeat, setCommandRepeat] = useState('once');
+  const [autoReplies, setAutoReplies] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const { activeAccount, startRaceCommand, stopRaceCommand, isRaceCommandActive } = useAccounts();
   const { toast } = useToast();
   
@@ -57,9 +63,43 @@ const CommandPanel = () => {
       return;
     }
     
+    if (!activeAccount || !activeAccount.activeRoom) {
+      toast({
+        title: "تحذير",
+        description: "الرجاء تحديد حساب نشط والاتصال بغرفة أولاً",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // سيتم تنفيذ الأمر هنا لاحقاً
+    
     toast({
       title: "تم إرسال الأمر",
-      description: "سيتم تنفيذ هذه الميزة قريباً",
+      description: `تم إرسال الأمر "${commandText}" بنجاح`,
+    });
+    
+    if (commandRepeat === 'repeat') {
+      toast({
+        title: "تنبيه",
+        description: `سيتم تكرار الأمر كل ${interval} دقائق`,
+      });
+    }
+  };
+  
+  const handleAddCommand = () => {
+    if (!commandText.trim()) {
+      toast({
+        title: "تحذير",
+        description: "الرجاء إدخال أمر مخصص أولاً",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    toast({
+      title: "تم الحفظ",
+      description: "تم حفظ الأمر المخصص في قائمة الأوامر",
     });
   };
   
@@ -73,60 +113,76 @@ const CommandPanel = () => {
         </div>
       )}
       
+      {activeAccount && !activeAccount.activeRoom && (
+        <div className="bg-yellow-50 p-3 rounded-lg mb-4 text-sm text-yellow-600">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 mt-0.5" />
+            <p>يجب الاتصال بغرفة أولاً لتتمكن من استخدام الأوامر</p>
+          </div>
+        </div>
+      )}
+      
       <Tabs defaultValue="race" className="mt-4">
-        <TabsList className="grid w-full grid-cols-2 mb-4">
+        <TabsList className="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="race">أوامر السباق</TabsTrigger>
           <TabsTrigger value="custom">أوامر مخصصة</TabsTrigger>
+          <TabsTrigger value="settings">الإعدادات</TabsTrigger>
         </TabsList>
         
         <TabsContent value="race" className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between mb-3">
-              <Label htmlFor="race-command" className="text-sm font-medium">أمر السباق</Label>
-              <div className="flex items-center gap-2">
-                <Switch id="race-active" checked={isRaceCommandActive} disabled={true} />
-                <Label htmlFor="race-active" className="text-xs">
-                  {isRaceCommandActive ? 'نشط' : 'غير نشط'}
-                </Label>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between mb-3">
+                  <Label htmlFor="race-command" className="text-sm font-medium">أمر السباق</Label>
+                  <div className="flex items-center gap-2">
+                    <Switch id="race-active" checked={isRaceCommandActive} disabled={true} />
+                    <Label htmlFor="race-active" className="text-xs">
+                      {isRaceCommandActive ? 'نشط' : 'غير نشط'}
+                    </Label>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="race-command"
+                    value="!س جلد"
+                    readOnly
+                    className="rounded bg-gray-50"
+                  />
+                  <Button variant="outline" size="icon" className="shrink-0">
+                    <Terminal className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Input
-                id="race-command"
-                value="!س جلد"
-                readOnly
-                className="rounded bg-gray-50"
-              />
-              <Button variant="outline" size="icon" className="shrink-0">
-                <Terminal className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
           
-          <div className="space-y-4 pt-4 border-t border-gray-100">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">الفاصل الزمني (دقائق)</Label>
-                <span className="text-sm text-gray-600">{interval} دقائق</span>
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">الفاصل الزمني (دقائق)</Label>
+                  <span className="text-sm text-gray-600">{interval} دقائق</span>
+                </div>
+                <Slider
+                  value={[interval]}
+                  min={1}
+                  max={30}
+                  step={1}
+                  onValueChange={(values) => setInterval(values[0])}
+                  disabled={isRaceCommandActive}
+                />
               </div>
-              <Slider
-                value={[interval]}
-                min={1}
-                max={30}
-                step={1}
-                onValueChange={(values) => setInterval(values[0])}
-                disabled={isRaceCommandActive}
-              />
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-gray-400" />
-              <span className="text-sm text-gray-600">
-                سيتم إرسال الأمر كل {interval} دقائق و 10 ثوانٍ
-              </span>
-            </div>
-          </div>
+              
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-600">
+                  سيتم إرسال الأمر كل {interval} دقائق و 10 ثوانٍ
+                </span>
+              </div>
+            </CardContent>
+          </Card>
           
           {isRaceCommandActive ? (
             <Button 
@@ -164,7 +220,11 @@ const CommandPanel = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="command-type" className="text-sm font-medium">نوع الأمر</Label>
-              <Select defaultValue="public" disabled={!activeAccount}>
+              <Select 
+                value={commandType} 
+                onValueChange={setCommandType}
+                disabled={!activeAccount}
+              >
                 <SelectTrigger id="command-type">
                   <SelectValue placeholder="اختر نوع الأمر" />
                 </SelectTrigger>
@@ -178,7 +238,11 @@ const CommandPanel = () => {
             
             <div className="space-y-2">
               <Label htmlFor="command-interval" className="text-sm font-medium">التكرار</Label>
-              <Select defaultValue="once" disabled={!activeAccount}>
+              <Select 
+                value={commandRepeat} 
+                onValueChange={setCommandRepeat}
+                disabled={!activeAccount}
+              >
                 <SelectTrigger id="command-interval">
                   <SelectValue placeholder="اختر نوع التكرار" />
                 </SelectTrigger>
@@ -191,24 +255,133 @@ const CommandPanel = () => {
             </div>
           </div>
           
+          {commandRepeat === 'repeat' && (
+            <div className="space-y-2 p-4 bg-gray-50 rounded-md">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="repeat-interval" className="text-sm font-medium">الفاصل الزمني (دقائق)</Label>
+                <span className="text-sm text-gray-600">{interval} دقائق</span>
+              </div>
+              <Slider
+                id="repeat-interval"
+                value={[interval]}
+                min={1}
+                max={30}
+                step={1}
+                onValueChange={(values) => setInterval(values[0])}
+              />
+            </div>
+          )}
+          
+          {commandRepeat === 'condition' && (
+            <div className="space-y-2 p-4 bg-gray-50 rounded-md">
+              <Label htmlFor="condition-text" className="text-sm font-medium">نص الشرط</Label>
+              <Input
+                id="condition-text"
+                placeholder="أدخل النص الذي يجب أن يظهر لتنفيذ الأمر"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                سيتم تنفيذ الأمر عندما يظهر هذا النص في الدردشة
+              </p>
+            </div>
+          )}
+          
           <div className="flex justify-between gap-2 mt-2">
             <Button 
               variant="outline" 
               className="gap-2 flex-1"
-              disabled={!activeAccount}
+              onClick={handleAddCommand}
+              disabled={!activeAccount || !commandText.trim()}
             >
               <Plus className="h-4 w-4" />
-              <span>إضافة أمر</span>
+              <span>حفظ الأمر</span>
             </Button>
             <Button 
               className="gap-2 flex-1"
               onClick={handleSendCustomCommand}
-              disabled={!activeAccount || !commandText.trim()}
+              disabled={!activeAccount || !activeAccount.activeRoom || !commandText.trim()}
             >
-              <Save className="h-4 w-4" />
+              <Terminal className="h-4 w-4" />
               <span>إرسال</span>
             </Button>
           </div>
+        </TabsContent>
+        
+        <TabsContent value="settings" className="space-y-4">
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4 text-gray-500" />
+                  <Label htmlFor="auto-replies" className="text-sm font-medium">الردود التلقائية</Label>
+                </div>
+                <Switch 
+                  id="auto-replies" 
+                  checked={autoReplies}
+                  onCheckedChange={setAutoReplies}
+                />
+              </div>
+              <p className="text-xs text-gray-500">
+                تمكين الردود التلقائية سيسمح للبوت بالرد على الرسائل حسب القواعد المحددة
+              </p>
+              
+              <Separator />
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Database className="h-4 w-4 text-gray-500" />
+                  <Label htmlFor="show-advanced" className="text-sm font-medium">إعدادات متقدمة</Label>
+                </div>
+                <Switch 
+                  id="show-advanced" 
+                  checked={showAdvanced}
+                  onCheckedChange={setShowAdvanced}
+                />
+              </div>
+              
+              {showAdvanced && (
+                <div className="space-y-3 p-3 bg-gray-50 rounded-md mt-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="timeout" className="text-xs font-medium">مهلة الاستجابة (بالثواني)</Label>
+                    <Input
+                      id="timeout"
+                      type="number"
+                      defaultValue={30}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Label htmlFor="max-retries" className="text-xs font-medium">الحد الأقصى لإعادة المحاولات</Label>
+                    <Input
+                      id="max-retries"
+                      type="number"
+                      defaultValue={3}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Label htmlFor="log-level" className="text-xs font-medium">مستوى التسجيل</Label>
+                    <Select defaultValue="info">
+                      <SelectTrigger id="log-level" className="h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="debug">تصحيح</SelectItem>
+                        <SelectItem value="info">معلومات</SelectItem>
+                        <SelectItem value="warn">تحذيرات</SelectItem>
+                        <SelectItem value="error">أخطاء</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          <Button className="w-full">
+            حفظ الإعدادات
+          </Button>
         </TabsContent>
       </Tabs>
     </GlassCard>

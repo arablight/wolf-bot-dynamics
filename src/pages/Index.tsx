@@ -1,13 +1,15 @@
+
 import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import GlassCard from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Bot, Users, MessageSquare, ActivitySquare, Play } from 'lucide-react';
+import { Plus, Bot, Users, MessageSquare, ActivitySquare, Play, Settings, Zap } from 'lucide-react';
 import AccountCard from '@/components/accounts/AccountCard';
 import AddAccountModal from '@/components/accounts/AddAccountModal';
 import RoomConnector from '@/components/rooms/RoomConnector';
 import CommandPanel from '@/components/commands/CommandPanel';
+import BotRules from '@/components/bots/BotRules';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
@@ -88,6 +90,16 @@ const ActivityLog = () => {
 // مكون لمعاينة الدردشة
 const ChatPreview = () => {
   const { activeAccount } = useAccounts();
+  const [message, setMessage] = useState('');
+  
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+    
+    // يمكن إضافة المنطق لإرسال الرسالة هنا
+    
+    setMessage('');
+  };
   
   return (
     <GlassCard>
@@ -96,7 +108,7 @@ const ChatPreview = () => {
         <h3 className="text-lg font-semibold">معاينة الدردشة</h3>
       </div>
       
-      <div className="bg-gray-50 rounded-lg p-3 h-60 flex flex-col">
+      <div className="bg-gray-50 rounded-lg p-3 h-[300px] flex flex-col">
         {!activeAccount || !activeAccount.activeRoom ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-400 text-sm">
@@ -121,15 +133,33 @@ const ChatPreview = () => {
                 <div className="font-bold text-xs text-wolf-primary">{activeAccount.username}</div>
                 <p>!س جلد</p>
               </div>
+              <div className="bg-wolf-light rounded p-2 text-sm max-w-[80%] mr-auto">
+                <div className="font-bold text-xs">بوت تخمين</div>
+                <p>خمن اسم صاحب/ة الصورة التالية 🖼️</p>
+              </div>
+              <div className="bg-wolf-primary bg-opacity-10 rounded p-2 text-sm max-w-[80%] border border-wolf-primary">
+                <div className="font-bold text-xs text-wolf-primary">{activeAccount.username}</div>
+                <p>محمد طبعا واضح!</p>
+              </div>
             </div>
-            <div className="mt-auto">
-              <Input
-                placeholder="اكتب رسالة..."
-                className="rounded-full bg-white"
-                disabled
-              />
-              <p className="text-xs text-center mt-1 text-gray-400">المعاينة للعرض فقط</p>
-            </div>
+            <form onSubmit={handleSendMessage} className="mt-auto">
+              <div className="flex">
+                <Input
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="اكتب رسالة..."
+                  className="rounded-r-full rounded-l-none bg-white"
+                />
+                <Button 
+                  type="submit" 
+                  className="rounded-l-full rounded-r-none px-3"
+                  disabled={!message.trim()}
+                >
+                  <Zap className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-center mt-1 text-gray-400">للتجربة فقط</p>
+            </form>
           </>
         )}
       </div>
@@ -143,16 +173,22 @@ const BotDashboard = () => {
   
   return (
     <section className="animate-slide-up" style={{ animationDelay: '100ms' }}>
-      <div className="flex items-center mb-4">
-        <Bot className="h-5 w-5 text-wolf-primary mr-2" />
-        <h2 className="text-xl font-semibold">لوحة تحكم البوت</h2>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
+          <Bot className="h-5 w-5 text-wolf-primary mr-2" />
+          <h2 className="text-xl font-semibold">لوحة تحكم البوت</h2>
+        </div>
+        <Button variant="outline" className="gap-1">
+          <Settings className="h-4 w-4" />
+          <span>إعدادات متقدمة</span>
+        </Button>
       </div>
       
       <Tabs defaultValue="race">
         <TabsList className="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="race">سباق</TabsTrigger>
-          <TabsTrigger value="custom">أوامر مخصصة</TabsTrigger>
-          <TabsTrigger value="settings">إعدادات</TabsTrigger>
+          <TabsTrigger value="guess">تخمين</TabsTrigger>
+          <TabsTrigger value="rules">القواعد</TabsTrigger>
         </TabsList>
         
         <TabsContent value="race" className="space-y-4">
@@ -181,56 +217,106 @@ const BotDashboard = () => {
                   </span>
                 </div>
               </div>
-            </div>
-          </GlassCard>
-        </TabsContent>
-        
-        <TabsContent value="custom" className="space-y-4">
-          <GlassCard className="p-4">
-            <h3 className="font-semibold mb-2">الأوامر المخصصة</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              قم بإنشاء وإدارة الأوامر المخصصة للبوت الخاص بك
-            </p>
-            
-            <div className="space-y-2">
-              <div className="bg-wolf-light p-3 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">الأوامر النشطة:</span>
-                  <span className="text-sm text-wolf-primary font-medium">0</span>
+              
+              <div className="bg-wolf-light p-3 rounded-lg mt-4">
+                <h4 className="text-sm font-medium mb-2">إحصائيات السباق:</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white p-2 rounded">
+                    <div className="text-xs text-gray-600">عدد الجولات</div>
+                    <div className="text-lg font-bold text-wolf-primary">24</div>
+                  </div>
+                  <div className="bg-white p-2 rounded">
+                    <div className="text-xs text-gray-600">المركز الحالي</div>
+                    <div className="text-lg font-bold text-wolf-primary">3</div>
+                  </div>
+                  <div className="bg-white p-2 rounded">
+                    <div className="text-xs text-gray-600">أفضل مركز</div>
+                    <div className="text-lg font-bold text-wolf-primary">1</div>
+                  </div>
+                  <div className="bg-white p-2 rounded">
+                    <div className="text-xs text-gray-600">الجوائز</div>
+                    <div className="text-lg font-bold text-wolf-primary">2</div>
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex justify-end">
-                <Button variant="outline" className="gap-1">
-                  <Plus className="h-4 w-4" />
-                  <span>إنشاء أمر جديد</span>
-                </Button>
-              </div>
             </div>
           </GlassCard>
         </TabsContent>
         
-        <TabsContent value="settings" className="space-y-4">
+        <TabsContent value="guess" className="space-y-4">
           <GlassCard className="p-4">
-            <h3 className="font-semibold mb-2">إعدادات البوت</h3>
+            <h3 className="font-semibold mb-2">بوت التخمين</h3>
             <p className="text-sm text-gray-600 mb-4">
-              قم بتخصيص إعدادات البوت حسب احتياجاتك
+              قم بإعداد البوت للتفاعل مع ألعاب التخمين في الغرف
             </p>
             
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">وضع التشغيل التلقائي</span>
-                <Switch id="auto-mode" />
+                <span className="text-sm font-medium">التخمين التلقائي</span>
+                <Switch id="auto-guess" defaultChecked />
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">الرد على الرسائل الخاصة</span>
-                <Switch id="auto-reply" defaultChecked />
+              
+              <div className="bg-wolf-light p-3 rounded-lg">
+                <h4 className="text-sm font-medium mb-2">الإعدادات:</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">سرعة الاستجابة:</span>
+                    <Select defaultValue="medium">
+                      <SelectTrigger className="w-32 h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fast">سريع</SelectItem>
+                        <SelectItem value="medium">متوسط</SelectItem>
+                        <SelectItem value="slow">بطيء</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">نمط التخمين:</span>
+                    <Select defaultValue="random">
+                      <SelectTrigger className="w-32 h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="random">عشوائي</SelectItem>
+                        <SelectItem value="ai">ذكاء اصطناعي</SelectItem>
+                        <SelectItem value="database">قاعدة بيانات</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">تفعيل السجلات</span>
-                <Switch id="logs" defaultChecked />
+              
+              <div className="bg-wolf-light p-3 rounded-lg mt-4">
+                <h4 className="text-sm font-medium mb-2">إحصائيات التخمين:</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white p-2 rounded">
+                    <div className="text-xs text-gray-600">عدد التخمينات</div>
+                    <div className="text-lg font-bold text-wolf-primary">37</div>
+                  </div>
+                  <div className="bg-white p-2 rounded">
+                    <div className="text-xs text-gray-600">إجابات صحيحة</div>
+                    <div className="text-lg font-bold text-wolf-primary">18</div>
+                  </div>
+                  <div className="bg-white p-2 rounded">
+                    <div className="text-xs text-gray-600">معدل النجاح</div>
+                    <div className="text-lg font-bold text-wolf-primary">49%</div>
+                  </div>
+                  <div className="bg-white p-2 rounded">
+                    <div className="text-xs text-gray-600">أفضل جلسة</div>
+                    <div className="text-lg font-bold text-wolf-primary">5</div>
+                  </div>
+                </div>
               </div>
             </div>
+          </GlassCard>
+        </TabsContent>
+        
+        <TabsContent value="rules" className="space-y-4">
+          <GlassCard className="p-4">
+            <BotRules />
           </GlassCard>
         </TabsContent>
       </Tabs>

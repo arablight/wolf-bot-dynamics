@@ -27,9 +27,28 @@ const RoomConnector = () => {
       return;
     }
     
+    // تحقق بسيط من تنسيق URL
+    let formattedUrl = roomUrl;
+    if (!formattedUrl.startsWith('http')) {
+      formattedUrl = `https://${formattedUrl}`;
+    }
+    
     setIsConnecting(true);
-    await connectToRoom(roomUrl);
-    setIsConnecting(false);
+    try {
+      await connectToRoom(formattedUrl);
+      toast({
+        title: "تم الاتصال",
+        description: "تم الاتصال بالغرفة بنجاح",
+      });
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء الاتصال بالغرفة",
+        variant: "destructive"
+      });
+    } finally {
+      setIsConnecting(false);
+    }
   };
   
   const handleIdConnect = async () => {
@@ -44,10 +63,23 @@ const RoomConnector = () => {
       return;
     }
     
-    const formattedUrl = `https://wolf.live/g/${roomId}`;
+    const formattedUrl = `https://wolf.live/g/${roomId.trim()}`;
     setIsConnecting(true);
-    await connectToRoom(formattedUrl);
-    setIsConnecting(false);
+    try {
+      await connectToRoom(formattedUrl);
+      toast({
+        title: "تم الاتصال",
+        description: "تم الاتصال بالغرفة بنجاح",
+      });
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء الاتصال بالغرفة",
+        variant: "destructive"
+      });
+    } finally {
+      setIsConnecting(false);
+    }
   };
   
   return (
@@ -74,6 +106,7 @@ const RoomConnector = () => {
               placeholder="أدخل رابط الغرفة"
               className="rounded-r-none focus-visible:ring-0 border-r-0"
               disabled={!activeAccount || isConnecting}
+              onKeyDown={(e) => e.key === 'Enter' && handleUrlConnect()}
             />
             <Button 
               className="rounded-l-none"
@@ -90,7 +123,7 @@ const RoomConnector = () => {
           
           <p className="text-xs text-gray-500">
             <Link2 className="h-3 w-3 inline mr-1" />
-            مثال: https://wolf.live/g/23456789
+            مثال: wolf.live/g/23456789 (يتم إضافة https:// تلقائياً)
           </p>
         </TabsContent>
         
@@ -102,6 +135,7 @@ const RoomConnector = () => {
               placeholder="أدخل معرف الغرفة"
               className="rounded-r-none focus-visible:ring-0 border-r-0"
               disabled={!activeAccount || isConnecting}
+              onKeyDown={(e) => e.key === 'Enter' && handleIdConnect()}
             />
             <Button 
               className="rounded-l-none"
