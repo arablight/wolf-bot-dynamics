@@ -1,4 +1,3 @@
-
 import { toast } from "@/components/ui/use-toast";
 
 // Define types
@@ -350,7 +349,7 @@ export const wolfAPI = {
 // Account Manager
 export class WolfAccountManager {
   private accounts: Map<string, WolfAccount> = new Map();
-  private activeTimers: Map<string, NodeJS.Timeout> = new Map();
+  private activeTimers: Map<string, TimerSettings> = new Map();
   private privateMessageListeners: Map<string, NodeJS.Timeout> = new Map();
   
   // Save accounts to local storage
@@ -754,7 +753,7 @@ export class WolfAccountManager {
   // RACE COMMAND FUNCTIONS
   
   // Start race command periodically
-  startRaceCommand(accountId: string, intervalMinutes: number, automaticDetection: boolean = false, raceSystem: string = 'queue'): boolean {
+  async startRaceCommand(accountId: string, intervalMinutes: number, automaticDetection: boolean = false, raceSystem: string = 'queue'): Promise<boolean> {
     const account = this.accounts.get(accountId);
     if (!account || account.status !== 'online' || !account.authToken || !account.activeRoom) {
       toast({
@@ -768,9 +767,9 @@ export class WolfAccountManager {
     // Stop any previous timers
     this.stopRaceCommand(accountId);
     
-    // Store race system type
-    this.activeTimers.set(`race-system-${accountId}`, setTimeout(() => {}, 0, raceSystem));
-    
+    // Store race system type using new TimerSettings interface
+    this.activeTimers.set(`race-system-${accountId}`, { data: raceSystem });
+
     // If auto detection is enabled, just listen for messages
     if (automaticDetection) {
       // Dispatch event for activity log
@@ -782,7 +781,7 @@ export class WolfAccountManager {
       }));
       
       // Store auto detection setting
-      this.activeTimers.set(`race-auto-${accountId}`, setTimeout(() => {}, 0));
+      this.activeTimers.set(`race-auto-${accountId}`, {});
       
       return true;
     }
@@ -955,10 +954,10 @@ export class WolfAccountManager {
       const result = await wolfAPI.sendGuessCommand(account.authToken, account.activeRoom, category);
       
       if (result.success) {
-        // Store guess settings
-        this.activeTimers.set(`guess-category-${accountId}`, setTimeout(() => {}, 0, category));
-        this.activeTimers.set(`guess-auto-${accountId}`, setTimeout(() => {}, 0, autoAnswer ? "true" : "false"));
-        this.activeTimers.set(`guess-delay-${accountId}`, setTimeout(() => {}, 0, responseDelay.toString()));
+        // Store guess settings using TimerSettings interface
+        this.activeTimers.set(`guess-category-${accountId}`, { data: category });
+        this.activeTimers.set(`guess-auto-${accountId}`, { data: autoAnswer ? "true" : "false" });
+        this.activeTimers.set(`guess-delay-${accountId}`, { data: responseDelay.toString() });
         
         // Dispatch event for activity log
         window.dispatchEvent(new CustomEvent('app-log', {
@@ -1075,9 +1074,9 @@ export class WolfAccountManager {
     this.stopFishCommand(accountId);
     
     try {
-      // Store fishing settings
-      this.activeTimers.set(`fish-command-${accountId}`, setTimeout(() => {}, 0, command));
-      this.activeTimers.set(`fish-system-${accountId}`, setTimeout(() => {}, 0, system));
+      // Store fishing settings using TimerSettings interface
+      this.activeTimers.set(`fish-command-${accountId}`, { data: command });
+      this.activeTimers.set(`fish-system-${accountId}`, { data: system });
       
       // Handle different fishing systems
       if (system === 'default') {
@@ -1129,7 +1128,7 @@ export class WolfAccountManager {
         }));
         
         // Store bonus timer (just a placeholder)
-        this.activeTimers.set(`fish-bonus-${accountId}`, setTimeout(() => {}, 0));
+        this.activeTimers.set(`fish-bonus-${accountId}`, {});
       }
       
       return true;
@@ -1212,13 +1211,8 @@ export class WolfAccountManager {
     const systemTimer = this.activeTimers.get(`fish-system-${accountId}`);
     if (!systemTimer) return null;
     
-    try {
-      // @ts-ignore - We're storing the system type in the timeout's args
-      const systemType = systemTimer.arguments?.[2];
-      return (systemType === 'default' || systemType === 'bonus') ? systemType : null;
-    } catch (error) {
-      return null;
-    }
+    const systemType = systemTimer.data;
+    return (systemType === 'default' || systemType === 'bonus') ? systemType : null;
   }
   
   // Get fish command
@@ -1226,12 +1220,7 @@ export class WolfAccountManager {
     const commandTimer = this.activeTimers.get(`fish-command-${accountId}`);
     if (!commandTimer) return null;
     
-    try {
-      // @ts-ignore - We're storing the command in the timeout's args
-      return commandTimer.arguments?.[2] || null;
-    } catch (error) {
-      return null;
-    }
+    return commandTimer.data || null;
   }
   
   // Get private messages for specific account
