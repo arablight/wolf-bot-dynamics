@@ -7,11 +7,28 @@ import RaceCommandPanel from './RaceCommandPanel';
 import GuessCommandPanel from './GuessCommandPanel';
 import FishCommandPanel from './FishCommandPanel';
 import CustomCommandPanel from './CustomCommandPanel';
+import StatusIndicator from '../ui/StatusIndicator';
+import { useAccounts } from '@/contexts/AccountContext';
 
 const CommandPanel = () => {
+  const { isRaceCommandActive, isFishCommandActive, isGuessCommandActive } = useAccounts();
+  
   return (
     <GlassCard className="w-full">
-      <h3 className="text-lg font-semibold mb-4">لوحة الأوامر</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">لوحة الأوامر</h3>
+        <div className="flex space-x-2 space-x-reverse">
+          {isRaceCommandActive && (
+            <StatusIndicator status="online" label="سباق" size="sm" />
+          )}
+          {isFishCommandActive && (
+            <StatusIndicator status="online" label="صيد" size="sm" />
+          )}
+          {isGuessCommandActive && (
+            <StatusIndicator status="online" label="خمن" size="sm" />
+          )}
+        </div>
+      </div>
       
       <Tabs defaultValue="race" className="mt-4">
         <TabsList className="grid w-full grid-cols-4 mb-4">

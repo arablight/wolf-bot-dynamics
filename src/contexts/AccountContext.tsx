@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { WolfAccount, WolfAccountManager, accountManager, PrivateMessage, GUESS_CATEGORIES } from '@/api/wolfAPI';
 import { useToast } from '@/components/ui/use-toast';
@@ -11,12 +12,18 @@ interface AccountContextType {
   toggleAccount: (id: string, active: boolean) => Promise<void>;
   connectToRoom: (roomUrl: string) => Promise<boolean>;
   sendMessage: (message: string) => Promise<boolean>;
-  startRaceCommand: (intervalMinutes: number, automaticDetection?: boolean) => boolean;
+  startRaceCommand: (intervalMinutes: number, automaticDetection?: boolean, raceSystem?: string) => boolean;
   stopRaceCommand: () => void;
   isRaceCommandActive: boolean;
   isRaceAutoDetectionActive: boolean;
-  startGuessCommand: (category: string) => Promise<boolean>;
-  startFishCommand: (baitLevel?: number) => Promise<boolean>;
+  startGuessCommand: (category: string, autoAnswer?: boolean, responseDelay?: number) => Promise<boolean>;
+  stopGuessCommand: () => void;
+  isGuessCommandActive: boolean;
+  startFishCommand: (command?: string, system?: string) => Promise<boolean>;
+  stopFishCommand: () => void;
+  isFishCommandActive: boolean;
+  isFishBonusActive: boolean;
+  fishSystemType: 'default' | 'bonus' | null;
   setActiveAccount: (account: WolfAccount | null) => void;
   getPrivateMessages: () => PrivateMessage[];
   guessCategories: typeof GUESS_CATEGORIES;
@@ -163,7 +170,8 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const startRaceCommand = (intervalMinutes: number, automaticDetection: boolean = false): boolean => {
+  // Race Command Functions
+  const startRaceCommand = (intervalMinutes: number, automaticDetection: boolean = false, raceSystem: string = 'queue'): boolean => {
     if (!activeAccount) {
       toast({
         title: "خطأ",
@@ -173,7 +181,7 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return false;
     }
     
-    return accountManager.startRaceCommand(activeAccount.id, intervalMinutes, automaticDetection);
+    return accountManager.startRaceCommand(activeAccount.id, intervalMinutes, automaticDetection, raceSystem);
   };
 
   const stopRaceCommand = () => {
@@ -186,7 +194,8 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const startGuessCommand = async (category: string): Promise<boolean> => {
+  // Guess Command Functions
+  const startGuessCommand = async (category: string, autoAnswer: boolean = true, responseDelay: number = 1): Promise<boolean> => {
     if (!activeAccount) {
       toast({
         title: "خطأ",
@@ -196,10 +205,21 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return false;
     }
     
-    return await accountManager.startGuessCommand(activeAccount.id, category);
+    return await accountManager.startGuessCommand(activeAccount.id, category, autoAnswer, responseDelay);
   };
 
-  const startFishCommand = async (baitLevel: number = 3): Promise<boolean> => {
+  const stopGuessCommand = () => {
+    if (activeAccount) {
+      accountManager.stopGuessCommand(activeAccount.id);
+      toast({
+        title: "تم الإيقاف",
+        description: "تم إيقاف أمر التخمين بنجاح",
+      });
+    }
+  };
+
+  // Fish Command Functions
+  const startFishCommand = async (command: string = '!صيد 3', system: string = 'default'): Promise<boolean> => {
     if (!activeAccount) {
       toast({
         title: "خطأ",
@@ -209,7 +229,17 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return false;
     }
     
-    return await accountManager.startFishCommand(activeAccount.id, baitLevel);
+    return await accountManager.startFishCommand(activeAccount.id, command, system);
+  };
+
+  const stopFishCommand = () => {
+    if (activeAccount) {
+      accountManager.stopFishCommand(activeAccount.id);
+      toast({
+        title: "تم الإيقاف",
+        description: "تم إيقاف نظام الصيد بنجاح",
+      });
+    }
   };
 
   const isRaceCommandActive = activeAccount 
@@ -219,6 +249,22 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const isRaceAutoDetectionActive = activeAccount
     ? accountManager.isRaceAutoDetectionActive(activeAccount.id)
     : false;
+  
+  const isGuessCommandActive = activeAccount
+    ? accountManager.isGuessCommandActive(activeAccount.id)
+    : false;
+    
+  const isFishCommandActive = activeAccount
+    ? accountManager.isFishCommandActive(activeAccount.id)
+    : false;
+    
+  const isFishBonusActive = activeAccount
+    ? accountManager.isFishBonusActive(activeAccount.id)
+    : false;
+    
+  const fishSystemType = activeAccount
+    ? accountManager.getFishSystemType(activeAccount.id)
+    : null;
 
   const getPrivateMessages = (): PrivateMessage[] => {
     if (!activeAccount) return [];
@@ -260,7 +306,13 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     isRaceCommandActive,
     isRaceAutoDetectionActive,
     startGuessCommand,
+    stopGuessCommand,
+    isGuessCommandActive,
     startFishCommand,
+    stopFishCommand,
+    isFishCommandActive,
+    isFishBonusActive,
+    fishSystemType,
     setActiveAccount,
     getPrivateMessages,
     guessCategories: GUESS_CATEGORIES,

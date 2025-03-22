@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Car, Clock, Square, Play, AlertTriangle, Bot } from 'lucide-react';
+import { Car, Clock, Square, Play, AlertTriangle, Bot, Users } from 'lucide-react';
 import { useAccounts } from '@/contexts/AccountContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,19 +9,27 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { OFFICIAL_BOT_IDS } from '@/api/wolfAPI';
+import StatusIndicator from '../ui/StatusIndicator';
 
 const RaceCommandPanel = () => {
   const [interval, setInterval] = useState(10);
-  const [autoDetection, setAutoDetection] = useState(false);
+  const [autoDetection, setAutoDetection] = useState(true);
+  const [raceSystem, setRaceSystem] = useState('queue'); // 'queue' or 'train'
+  
   const { 
     activeAccount,
+    accounts,
     startRaceCommand,
     stopRaceCommand,
     isRaceCommandActive,
     isRaceAutoDetectionActive
   } = useAccounts();
+  
   const { toast } = useToast();
+  
+  const participatingAccounts = accounts.filter(acc => acc.status === 'online');
   
   const handleStartRaceCommand = () => {
     if (!activeAccount) {
@@ -42,13 +50,15 @@ const RaceCommandPanel = () => {
       return;
     }
     
-    const success = startRaceCommand(interval, autoDetection);
+    const success = startRaceCommand(interval, autoDetection, raceSystem);
     if (success) {
       toast({
         title: "تم تشغيل أمر السباق",
         description: autoDetection 
           ? "تم تفعيل الكشف التلقائي لأوامر السباق" 
-          : `سيتم إرسال أمر السباق كل ${interval} دقائق و 10 ثوانٍ`,
+          : raceSystem === 'queue'
+            ? `سيتم إرسال أمر السباق للحسابات بالتتابع كل ${interval} دقائق و 40 ثانية`
+            : "سيتم إرسال أمر السباق للحسابات بشكل متزامن مع فاصل زمني صغير",
       });
     }
   };
@@ -78,12 +88,11 @@ const RaceCommandPanel = () => {
                 <Car className="h-4 w-4 text-wolf-primary" />
                 <Label htmlFor="race-command" className="text-sm font-medium">أمر السباق</Label>
               </div>
-              <div className="flex items-center gap-2">
-                <Switch id="race-active" checked={isRaceCommandActive} disabled={true} />
-                <Label htmlFor="race-active" className="text-xs">
-                  {isRaceCommandActive ? 'نشط' : 'غير نشط'}
-                </Label>
-              </div>
+              <StatusIndicator 
+                status={isRaceCommandActive ? "online" : "offline"} 
+                label={isRaceCommandActive ? "نشط" : "غير نشط"} 
+                size="sm" 
+              />
             </div>
             
             <div className="flex items-center gap-2">
@@ -93,6 +102,30 @@ const RaceCommandPanel = () => {
                 readOnly
                 className="w-full rounded bg-gray-50 p-2 text-sm"
               />
+            </div>
+            
+            <div className="mt-4">
+              <h4 className="text-sm font-medium mb-2">نظام السباق</h4>
+              <RadioGroup value={raceSystem} onValueChange={setRaceSystem} className="flex flex-col space-y-2" disabled={isRaceCommandActive}>
+                <div className="flex items-start space-x-2 space-x-reverse">
+                  <RadioGroupItem value="queue" id="race-queue" />
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="race-queue" className="font-medium">قائمة انتظار السباق</Label>
+                    <p className="text-xs text-gray-500">
+                      ترتيب الحسابات واحد تلو الآخر، كل حساب ينتظر الحساب السابق.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-2 space-x-reverse">
+                  <RadioGroupItem value="train" id="race-train" />
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="race-train" className="font-medium">قطار السباق</Label>
+                    <p className="text-xs text-gray-500">
+                      جميع الحسابات تبدأ السباق في وقت واحد، مع فاصل زمني صغير بين الأوامر.
+                    </p>
+                  </div>
+                </div>
+              </RadioGroup>
             </div>
             
             <div className="flex items-center space-x-2 space-x-reverse gap-2 mt-3">
@@ -131,11 +164,32 @@ const RaceCommandPanel = () => {
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-gray-400" />
             <span className="text-sm text-gray-600">
-              سيتم إرسال الأمر كل {interval} دقائق و 10 ثوانٍ
+              سيتم إرسال الأمر كل {interval} دقائق و 40 ثانية
             </span>
           </div>
         </CardContent>
       </Card>
+      
+      {participatingAccounts.length > 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-wolf-primary" />
+                <h4 className="text-sm font-medium">الحسابات المشاركة ({participatingAccounts.length})</h4>
+              </div>
+              <div className="max-h-28 overflow-y-auto pr-2">
+                {participatingAccounts.map(account => (
+                  <div key={account.id} className="flex items-center justify-between py-1 border-b border-gray-100 last:border-0">
+                    <span className="text-sm">{account.username}</span>
+                    <StatusIndicator status={account.status} size="sm" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       {isRaceCommandActive ? (
         <Button 
