@@ -28,6 +28,12 @@ export type WolfAPIResponse = {
   data?: any;
 };
 
+// Timer settings interface for storing data with timers
+interface TimerSettings {
+  timer?: NodeJS.Timeout;
+  data?: string;
+}
+
 // Official bot IDs
 export const OFFICIAL_BOT_IDS = {
   RACE_BOT: "80277459", // Race bot

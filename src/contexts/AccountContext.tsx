@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { WolfAccount, WolfAccountManager, accountManager, PrivateMessage, GUESS_CATEGORIES } from '@/api/wolfAPI';
 import { useToast } from '@/components/ui/use-toast';
@@ -12,7 +11,7 @@ interface AccountContextType {
   toggleAccount: (id: string, active: boolean) => Promise<void>;
   connectToRoom: (roomUrl: string) => Promise<boolean>;
   sendMessage: (message: string) => Promise<boolean>;
-  startRaceCommand: (intervalMinutes: number, automaticDetection?: boolean, raceSystem?: string) => boolean;
+  startRaceCommand: (intervalMinutes: number, automaticDetection?: boolean, raceSystem?: string) => Promise<boolean>;
   stopRaceCommand: () => void;
   isRaceCommandActive: boolean;
   isRaceAutoDetectionActive: boolean;
@@ -170,8 +169,7 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Race Command Functions
-  const startRaceCommand = (intervalMinutes: number, automaticDetection: boolean = false, raceSystem: string = 'queue'): boolean => {
+  const startRaceCommand = async (intervalMinutes: number, automaticDetection: boolean = false, raceSystem: string = 'queue'): Promise<boolean> => {
     if (!activeAccount) {
       toast({
         title: "خطأ",
@@ -181,7 +179,7 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return false;
     }
     
-    return accountManager.startRaceCommand(activeAccount.id, intervalMinutes, automaticDetection, raceSystem);
+    return await accountManager.startRaceCommand(activeAccount.id, intervalMinutes, automaticDetection, raceSystem);
   };
 
   const stopRaceCommand = () => {
@@ -194,7 +192,6 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Guess Command Functions
   const startGuessCommand = async (category: string, autoAnswer: boolean = true, responseDelay: number = 1): Promise<boolean> => {
     if (!activeAccount) {
       toast({
@@ -218,7 +215,6 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Fish Command Functions
   const startFishCommand = async (command: string = '!صيد 3', system: string = 'default'): Promise<boolean> => {
     if (!activeAccount) {
       toast({
