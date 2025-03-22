@@ -1,3 +1,4 @@
+
 import { toast } from "@/components/ui/use-toast";
 
 // Define types
@@ -30,7 +31,7 @@ export type WolfAPIResponse = {
 
 // Timer settings interface for storing data with timers
 interface TimerSettings {
-  timer?: NodeJS.Timeout;
+  timer?: NodeJS.Timeout | null;
   data?: string;
 }
 
@@ -671,7 +672,7 @@ export class WolfAccountManager {
         // If auto detection is active, restart race command after cooldown
         if (this.isRaceAutoDetectionActive(accountId)) {
           // Restart race command after 10 minutes and 10 seconds
-          const timerId = setTimeout(async () => {
+          const timerValue = setTimeout(async () => {
             const currentAccount = this.accounts.get(accountId);
             if (currentAccount?.status === 'online' && currentAccount.authToken && currentAccount.activeRoom) {
               await wolfAPI.sendRaceCommand(currentAccount.authToken, currentAccount.activeRoom);
@@ -686,7 +687,7 @@ export class WolfAccountManager {
           }, 10 * 60 * 1000 + 10 * 1000); // 10 minutes and 10 seconds
           
           // Store timer reference
-          this.activeTimers.set(`race-cooldown-${accountId}`, timerId);
+          this.activeTimers.set(`race-cooldown-${accountId}`, { timer: timerValue });
         }
       }
       
@@ -846,7 +847,7 @@ export class WolfAccountManager {
     }
     
     // Create timer to send command periodically
-    const timer = setInterval(() => {
+    const timerInterval = setInterval(() => {
       const currentAccount = this.accounts.get(accountId);
       
       if (currentAccount?.status === 'online' && currentAccount.authToken && currentAccount.activeRoom) {
@@ -902,7 +903,7 @@ export class WolfAccountManager {
     }, intervalMs);
     
     // Store timer reference
-    this.activeTimers.set(`race-timer-${accountId}`, timer);
+    this.activeTimers.set(`race-timer-${accountId}`, { timer: timerInterval });
     
     return true;
   }
@@ -911,29 +912,29 @@ export class WolfAccountManager {
   stopRaceCommand(accountId: string): void {
     // Stop auto detection timer
     const autoTimer = this.activeTimers.get(`race-auto-${accountId}`);
-    if (autoTimer) {
-      clearTimeout(autoTimer);
+    if (autoTimer && autoTimer.timer) {
+      clearTimeout(autoTimer.timer);
       this.activeTimers.delete(`race-auto-${accountId}`);
     }
     
     // Stop race system type timer
     const systemTimer = this.activeTimers.get(`race-system-${accountId}`);
-    if (systemTimer) {
-      clearTimeout(systemTimer);
+    if (systemTimer && systemTimer.timer) {
+      clearTimeout(systemTimer.timer);
       this.activeTimers.delete(`race-system-${accountId}`);
     }
     
     // Stop race timer
     const timer = this.activeTimers.get(`race-timer-${accountId}`);
-    if (timer) {
-      clearInterval(timer);
+    if (timer && timer.timer) {
+      clearInterval(timer.timer);
       this.activeTimers.delete(`race-timer-${accountId}`);
     }
     
     // Stop race cooldown timer
     const cooldownTimer = this.activeTimers.get(`race-cooldown-${accountId}`);
-    if (cooldownTimer) {
-      clearTimeout(cooldownTimer);
+    if (cooldownTimer && cooldownTimer.timer) {
+      clearTimeout(cooldownTimer.timer);
       this.activeTimers.delete(`race-cooldown-${accountId}`);
     }
   }
@@ -1028,36 +1029,36 @@ export class WolfAccountManager {
     }, 5000);
     
     // Store timer reference
-    this.activeTimers.set(`guess-timer-${accountId}`, timerId);
+    this.activeTimers.set(`guess-timer-${accountId}`, { timer: timerId });
   }
   
   // Stop guess command
   stopGuessCommand(accountId: string): void {
     // Stop category timer
     const categoryTimer = this.activeTimers.get(`guess-category-${accountId}`);
-    if (categoryTimer) {
-      clearTimeout(categoryTimer);
+    if (categoryTimer && categoryTimer.timer) {
+      clearTimeout(categoryTimer.timer);
       this.activeTimers.delete(`guess-category-${accountId}`);
     }
     
     // Stop auto timer
     const autoTimer = this.activeTimers.get(`guess-auto-${accountId}`);
-    if (autoTimer) {
-      clearTimeout(autoTimer);
+    if (autoTimer && autoTimer.timer) {
+      clearTimeout(autoTimer.timer);
       this.activeTimers.delete(`guess-auto-${accountId}`);
     }
     
     // Stop delay timer
     const delayTimer = this.activeTimers.get(`guess-delay-${accountId}`);
-    if (delayTimer) {
-      clearTimeout(delayTimer);
+    if (delayTimer && delayTimer.timer) {
+      clearTimeout(delayTimer.timer);
       this.activeTimers.delete(`guess-delay-${accountId}`);
     }
     
     // Stop guess timer
     const timer = this.activeTimers.get(`guess-timer-${accountId}`);
-    if (timer) {
-      clearInterval(timer);
+    if (timer && timer.timer) {
+      clearInterval(timer.timer);
       this.activeTimers.delete(`guess-timer-${accountId}`);
     }
   }
@@ -1121,7 +1122,7 @@ export class WolfAccountManager {
           }, 3630 * 1000); // 3630 seconds = 60.5 minutes
           
           // Store timer reference
-          this.activeTimers.set(`fish-timer-${accountId}`, timer);
+          this.activeTimers.set(`fish-timer-${accountId}`, { timer });
         }
       } else if (system === 'bonus') {
         // For bonus system, just enable the detection of bonus-cast messages
@@ -1148,29 +1149,29 @@ export class WolfAccountManager {
   stopFishCommand(accountId: string): void {
     // Stop command timer
     const commandTimer = this.activeTimers.get(`fish-command-${accountId}`);
-    if (commandTimer) {
-      clearTimeout(commandTimer);
+    if (commandTimer && commandTimer.timer) {
+      clearTimeout(commandTimer.timer);
       this.activeTimers.delete(`fish-command-${accountId}`);
     }
     
     // Stop system timer
     const systemTimer = this.activeTimers.get(`fish-system-${accountId}`);
-    if (systemTimer) {
-      clearTimeout(systemTimer);
+    if (systemTimer && systemTimer.timer) {
+      clearTimeout(systemTimer.timer);
       this.activeTimers.delete(`fish-system-${accountId}`);
     }
     
     // Stop fish timer
     const timer = this.activeTimers.get(`fish-timer-${accountId}`);
-    if (timer) {
-      clearInterval(timer);
+    if (timer && timer.timer) {
+      clearInterval(timer.timer);
       this.activeTimers.delete(`fish-timer-${accountId}`);
     }
     
     // Stop bonus timer
     const bonusTimer = this.activeTimers.get(`fish-bonus-${accountId}`);
-    if (bonusTimer) {
-      clearTimeout(bonusTimer);
+    if (bonusTimer && bonusTimer.timer) {
+      clearTimeout(bonusTimer.timer);
       this.activeTimers.delete(`fish-bonus-${accountId}`);
     }
   }
